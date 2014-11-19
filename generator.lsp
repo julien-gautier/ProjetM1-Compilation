@@ -9,6 +9,22 @@
 	)
 )
 
+(defun nbVar
+	(env)
+	(cond ((eq NIL env) 0)
+		((atom env) 0)
+		(T (+ 1 (nbVar (cdr env))))
+	)
+)
+
+(defun charge-env
+	(env)
+	(cond ((eq NIL env) NIL)
+		((atom env) NIL)
+		(T (append (list (cons ':CONST (car env))) (charge-env (cdr env))))
+	)
+)
+
 (defun compil
 	(expr &rest ll) ; (compil <expr1> <expr2> ...) 
 	(cond ((eql NIL expr) NIL); si expr est nul -> NIL 
@@ -34,26 +50,13 @@
 		((eql ':if (car expr))
 			(append (apply #'compil (list (cadr expr))) (list (cons ':SKIPNIL (+ 1 (nbInstr (caddr expr))))) (apply #'compil (list (caddr expr))) (list (cons ':SKIP (nbInstr (cdddr expr)))) (apply #'compil (cdddr expr)) (apply #'compil (car ll) (cdr ll))
 			))
+		((eql ':set-var (car expr))
+			(append (compil (cddr expr)) (list (cons ':SET-VAR (cadr expr))) (apply #'compil (car ll) (cdr ll))
+			))
 		((eql ':progn (car expr))
 			(append (apply #'compil (cdr expr) ll)
 			))
 		((listp (car expr)) (append (apply #'compil (car expr) (cdr expr)) (apply #'compil (car ll) (cdr ll))))
-	)
-)
-
-(defun nbVar
-	(env)
-	(cond ((eq NIL env) 0)
-		((atom env) 0)
-		(T (+ 1 (nbVar (cdr env))))
-	)
-)
-
-(defun charge-env
-	(env)
-	(cond ((eq NIL env) NIL)
-		((atom env) NIL)
-		(T (append (list (cons ':CONST (car env))) (charge-env (cdr env))))
 	)
 )
 
