@@ -34,7 +34,7 @@
 
      ;Cas du QUOTE
      ((equal 'quote (car expr))
-      (cons :const (cadr expr))
+      (cons :const (cadr expr)))
 
      ;Cas du PROGN
      ((equal 'progn (car expr))
