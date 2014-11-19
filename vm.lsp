@@ -12,6 +12,17 @@
 	(vm)
 	(get vm 'SP))
 
+;; incrémente le SP
+(defun incrSP
+	(vm)
+	(setf (SP vm) (+ (SP vm) 1)))
+
+;; décrémente le SP
+(defun decrSP
+	(vm)
+	(setf (SP vm) (- (SP vm) 1)))
+
+;; modifier un élément d'un tableau
 (defun aset
 	(value tabeau elem)
 	(setf (aref tabeau elem) value)
@@ -21,7 +32,7 @@
 (defun push2
   	(value vm)
 	(progn
-		(setf (SP vm) (+ (SP vm) 1))
+		(incrSP vm)
  		(aset value (stack vm) (SP vm))
 	)
 )
@@ -30,7 +41,7 @@
 (defun pop2
 	(vm)
 	(progn
-		(setf (SP vm) (- (SP vm) 1))
+		(decrSP vm)
 		(aref (stack vm) (+ (SP vm) 1))
 	)
 )
