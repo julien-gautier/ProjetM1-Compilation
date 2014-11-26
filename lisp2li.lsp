@@ -38,7 +38,7 @@
 
      ;Cas du QUOTE
      ((equal 'print (car expr))
-      (cons :print (cadr expr)))
+      (cons :print (lisp2li (cadr expr) env)))
 
      ;Cas du PROGN
      ((equal 'progn (car expr))
