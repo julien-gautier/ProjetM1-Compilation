@@ -34,7 +34,11 @@
 
      ;Cas du QUOTE
      ((equal 'quote (car expr))
-      (cons :const (cadr expr)))
+      (cons :quote (cadr expr)))
+
+     ;Cas du QUOTE
+     ((equal 'print (car expr))
+      (cons :print (cadr expr)))
 
      ;Cas du PROGN
      ((equal 'progn (car expr))
