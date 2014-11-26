@@ -19,7 +19,7 @@
 
      ;Cas du IF
      ((equal 'if (car expr))
-      (cons :if (map-lisp2li (cdr expr) env)))
+      (list* :if (map-lisp2li (cdr expr) env)))
 
      ;Cas du SETF
      ((equal 'setf (car expr))
@@ -30,7 +30,7 @@
 		;Si p = nil alors erreur
 		(warn "variable inconnue")
 		  ;Sinon
-		  (list* :set-var (+ p 1) (lisp2li (caddr expr) env))))))
+		  (list :set-var (+ p 1) (lisp2li (caddr expr) env))))))
 
      ;Cas du QUOTE
      ((equal 'quote (car expr))
@@ -51,5 +51,5 @@
       '()
     ;Construit la liste des valeurs retournees par lisp2li
     ;sur chaque element de expr
-    (list* (lisp2li (car expr) env) (map-lisp2li (cdr expr) env))
+    (cons (lisp2li (car expr) env) (map-lisp2li (cdr expr) env))
 ))
