@@ -7,12 +7,13 @@
 	(:CONST (cdr expr))
 	;; Si c'est :var, alors on renvoie la valeur a la position (cdr expr) dans la liste env
 	(:VAR (aref env (cdr expr)))
+	(:CVAR (aref (aref env (cadr expr)) (cddr expr)))
 	(:SET-VAR (setf (aref env (cdr expr)) (eval-li(cddr expr) env)))
 	(:IF (if (eval-li (cadr expr) env) (eval-li (caddr expr) env)
 	       (eval-li (cdddr expr) env)))
 	(:CALL (apply (cadr expr) (map-eval-li (cddr expr) env)))
 	(:MCALL (let((fun (get-defun(second expr))))
-		(eval-li (third fun)
+		(eval-li (first fun) ;ou third...
 		(make-env-eval-li (second fun)
 			(map-eval-li (cddr expr) env)))))
 
@@ -50,7 +51,7 @@
 	)
 )
 
-
+; Prend en parametre un entier et une liste de VALEURS, crée un environnement (tableau) de la taille de l'entier et le remplit avec les valeurs de la liste
 (defun make-env-eval-li (taille lvaleur) 
 	(progn 
 	(setf tableau (make-array taille))
