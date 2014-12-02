@@ -1,4 +1,4 @@
-					; meta evaluateur du langage intermediaire (meval LI)
+; meta evaluateur du langage intermediaire (meval LI)
 (defun eval-li (expr env)
   (case (car expr)
 	;; Si le car de l'expression est :const, on renvoie la constante
@@ -31,6 +31,10 @@
 (defun map-eval-li (lexpr env)
   (if (null lexpr) ()
     (cons (eval-li (car lexpr) env) (map-eval-li (cdr lexpr) env)))
+  )
+(defun map-eval-li* (lexpr env)
+  (if (null (cdr lexpr)) (eval-li (car lexpr) env)
+    (cons (eval-li (car lexpr) env) (map-eval-li* (cdr lexpr) env)))
   )
 (defun map-eval-li-progn (lexpr env)
   (if (null (cdr lexpr))
