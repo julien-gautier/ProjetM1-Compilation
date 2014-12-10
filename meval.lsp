@@ -3,13 +3,14 @@
   (case (car expr)
 	;; Si le car de l'expression est :const, on renvoie la constante
 	(:CONST (cdr expr))
+	(:LIT (cdr expr))
 	;; Si c'est :var, alors on renvoie la valeur a la position (cdr expr) dans la liste env
 	(:VAR (aref env (cdr expr)))
 	(:CVAR (aref (aref env (cadr expr)) (cddr expr)))
 	(:SET-VAR (setf (aref env (cadr expr)) (eval-li(caddr expr) env))) ;cddr
 ;	(:SET-VAR (setf (aref env (cadr expr)) (eval-li(cddr expr) env))) ;cddr
 	(:IF (if (eval-li (cadr expr) env) (eval-li (caddr expr) env)
-	       (eval-li (cadddr expr) env)))
+	       (eval-li (cdddr expr) env)))
 	(:CALL (apply (cadr expr) (map-eval-li (cddr expr) env)))
 	(:MCALL (let((fun (get-defun(second expr))))
 		  (eval-li (third fun)
@@ -46,7 +47,20 @@
 					; Prend en parametre un entier et une liste de VALEURS, crée un environnement (tableau) de la taille de l'entier et le remplit avec les valeurs de la liste
 (defun make-env-eval-li (taille lvaleur)
   (progn
-    (setf tableau (make-array taille))
+    (setf tableau (make-array (+ 1 taille)))
+    (labels ((fun (listeValeur i)
+		  (if (null listeValeur)
+		      ()
+		    (progn (setf (aref tableau i) (car listeValeur))
+			   (fun (cdr listeValeur) (+ i 1))))))
+	    (fun lvaleur 1))
+    ;(print tableau)
+    tableau)
+  )
+
+;; on fait pas le +1
+(defun make-env-eval-li-1 (taille lvaleur)
+  (let(( tableau (make-array taille)))
     (labels ((fun (listeValeur i)
 		  (if (null listeValeur)
 		      ()
@@ -55,4 +69,4 @@
 	    (fun lvaleur 0))
     tableau)
   )
-  
+
