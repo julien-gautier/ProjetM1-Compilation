@@ -13,3 +13,34 @@
 		)
 	)
 )
+
+
+
+;; FIBO compliqué
+
+(:closure () 1 3
+	(:progn (:set-var 2
+		(:lclosure 1 1
+			(:if (:call < (:var . 1) (:lit . 2))
+				(:lit . 1) .
+				(:call +
+					(:lcall 1 3 (:call - (:var . 1) (:lit . 1)))
+					(:lcall 1 3 (:call - (:var . 1) (:lit . 2)))
+					)
+				)
+		)
+		)
+		(:set-var 3
+		(:lclosure 1 1
+			(:if (:call < (:var . 1) (:lit . 2))
+				(:lit . 1) .
+				(:call +
+					(:lcall 1 2 (:call - (:var . 1) (:lit . 1)))
+					(:lcall 1 2 (:call - (:var . 1) (:lit . 2)))
+				)
+			)
+		)
+		)
+		(:lcall 0 2 (:var . 1))
+	)
+)
