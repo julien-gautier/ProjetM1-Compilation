@@ -14,11 +14,18 @@
 	(:CALL (apply (cadr expr) (map-eval-li (cddr expr) env)))
 	(:MCALL (let((fun (get-defun(second expr))))
 		  (eval-li (third fun)
-			   (make-env-eval-li (second fun)
+ 			   (make-env-eval-li (second fun)
 					     (map-eval-li (cddr expr) env)))))
 	(:PROGN (map-eval-li-progn (cdr expr) env))
-					;(:LCLOSURE
-					;(:CLOSURE
+	;(:CLOSURE 
+	;(:LCLOSURE
+
+	; 3 cas, si symbole -> apply,  sinon -> (:closure ___ )
+	;pas fini... pas compris
+;	(:FUNCTION (if (symbp (cadr expr))
+;		       (apply (cadr expr) (cddr expr))
+;		     ))
+	
 	;; for fun
 	(:PRINT (print (eval-li (cdr expr) env)))
 	(:QUOTE (quote (cdr expr)))
@@ -69,4 +76,3 @@
 	    (fun lvaleur 0))
     tableau)
   )
-
