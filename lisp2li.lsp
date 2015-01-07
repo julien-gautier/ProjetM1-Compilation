@@ -31,7 +31,7 @@
 	
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-	 (setf (get (cadr expr) :defun) (list :lambda (length (caddr expr)) :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) 1)))))
+	 (setf (get (cadr expr) :defun) (list :lambda (length (caddr expr)) (list* :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) 1))))))
 
 	
 	 ;Cas du SETF
@@ -87,6 +87,3 @@
    ;On construit la liste au fur et a mesure
    (cons (make-stat-env (car args) pos) (make-stat-env (cdr args) (+ 1 pos))))))
 	
-	
-	
-
