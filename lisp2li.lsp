@@ -26,10 +26,13 @@
 	  (list* :if (map-lisp2li (cdr expr) env)))
 	  
 	;Cas du LET
+
+	 
 	
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-		(setf (get (cadr expr) :defun) (list* (length (caddr expr)) (cadr expr) (lisp2li (cadddr expr) (caddr expr)))))
+	 (setf (get (cadr expr) :defun) (list :lambda (length (caddr expr)) :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) 1)))))
+
 	
 	 ;Cas du SETF
 	 ((equal 'setf (car expr))
@@ -41,6 +44,9 @@
 		(warn "variable inconnue")
 		  ;Sinon
 		  (list :set-var (+ p 1) (lisp2li (caddr expr) env))))))
+
+	 ;MACRO
+	 ((macro-function (car expr)) (lisp2li (macroexpand-1 expr) env))
 
 	 ;Cas du QUOTE
 	 ((equal 'quote (car expr))
@@ -73,13 +79,13 @@
 	
 	
 ;Fonction qui construit un env local a une fonction
-(defun make-env (args pos)
+(defun make-stat-env (args pos)
  (if (null args)
      ()
    (if (atom args)
      (cons args pos)
    ;On construit la liste au fur et a mesure
-   (cons (make-env (car args) pos) (make-env (cdr args) (+ 1 pos))))))
+   (cons (make-stat-env (car args) pos) (make-stat-env (cdr args) (+ 1 pos))))))
 	
 	
 	
