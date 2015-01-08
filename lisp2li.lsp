@@ -25,14 +25,14 @@
 	 ((equal 'if (car expr))
 	  (list* :if (map-lisp2li (cdr expr) env)))
 	  
-	;Cas du LET
-
-	 
+	;Cas du LET	 
 	
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-	 (setf (get (cadr expr) :defun) (list :lambda (length (caddr expr)) (list* :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env))))))
-
+	 (setf (get (cadr expr) :defun) 
+	       (list :lambda (length (caddr expr)) 
+		     (list* :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env)))
+		     )))
 	
 	 ;Cas du SETF
 	 ((equal 'setf (car expr))
