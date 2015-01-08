@@ -1,4 +1,7 @@
 ; meta evaluateur du langage intermediaire (meval LI)
+; inutile, a enlever
+; function a revoir
+(defun test () 5)
 (defun eval-li (expr env)
   (case (car expr)
 	;; Si le car de l'expression est :const, on renvoie la constante
@@ -10,7 +13,7 @@
 	(:SET-VAR (setf (aref env (cadr expr)) (eval-li(caddr expr) env))) ;cddr
 ;	(:SET-VAR (setf (aref env (cadr expr)) (eval-li(cddr expr) env))) ;cddr
 	(:IF (if (eval-li (cadr expr) env) (eval-li (caddr expr) env)
-	       (eval-li (cdddr expr) env)))
+	       (eval-li (cadddr expr) env)))
 	(:CALL (apply (cadr expr) (map-eval-li (cddr expr) env)))
 	(:MCALL (let((fun (get-defun(second expr))))
 		  (eval-li (third fun)
@@ -22,10 +25,18 @@
 
 	; 3 cas, si symbole -> apply,  sinon -> (:closure ___ )
 	;pas fini... pas compris
-;	(:FUNCTION (if (symbp (cadr expr))
-;		       (apply (cadr expr) (cddr expr))
+	(:FUNCTION ;(if (symbolp (cadr expr))
+		       ;(apply (cadr expr) (cddr expr))
+		  ;     2
+		     (if (null (get-defun (cadr expr)))
+			 (if (symbolp (cadr expr))
+			     (apply (cadr expr)  (map-eval-li (cddr expr) env))
+			   10)
+		       (get-defun (cadr expr))
+		       ))
 ;		     ))
 	
+	(:LCLOSURE `(:closure ,env ,(cadr expr) ,(caddr expr)))
 	;; for fun
 	(:PRINT (print (eval-li (cdr expr) env)))
 	(:QUOTE (quote (cdr expr)))
