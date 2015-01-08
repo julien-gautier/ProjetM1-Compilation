@@ -31,7 +31,7 @@
 	
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-	 (setf (get (cadr expr) :defun) (list :lambda (length (caddr expr)) (list* :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) 1))))))
+	 (setf (get (cadr expr) :defun) (list :lambda (length (caddr expr)) (list* :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env))))))
 
 	
 	 ;Cas du SETF
@@ -79,11 +79,12 @@
 	
 	
 ;Fonction qui construit un env local a une fonction
-(defun make-stat-env (args pos)
+(defun make-stat-env (args env)
  (if (null args)
-     ()
-   (if (atom args)
-     (cons args pos)
-   ;On construit la liste au fur et a mesure
-   (cons (make-stat-env (car args) pos) (make-stat-env (cdr args) (+ 1 pos))))))
-	
+     env
+   (progn (print env)
+	  (append env args))))
+
+	  
+;Petit test de fibo	
+;(lisp2li '(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))())
