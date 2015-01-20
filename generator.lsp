@@ -1,3 +1,6 @@
+;Zone Mémoire : 0 - 9
+;Zone Pile : 10+
+
 (defun nbInstr
 	(expr)
 	(cond ((eql NIL expr) 0)
@@ -47,12 +50,20 @@
 	)
 )
 
+(defun addvar
+	(int)
+	(if (> int 1)
+		(addvar (/ int 10))
+		int
+	)
+)
+
 (defun compil
 	(expr &rest ll) ; (compil <expr1> <expr2> ...) 
 	(cond ((eql NIL expr) NIL); si expr est nul -> NIL 
-		((atom expr) (progn (warn "ERROR : J'ai pas reçu une expression LI abruti!") NIL)) ; si expr nest pas une list, ce nest pas une instruction -> NIL
+		((atom expr) (progn (warn "ERROR : J'ai pas reçu une expression LI!") NIL)) ; si expr nest pas une list, ce nest pas une instruction -> NIL
 		((eql :unknown (car expr))
-			(progn (warn "ERROR : Je suis pas sensé avoir un :unknown crétin!") NIL); si je reçois un :unknown, probleme dans Lisp2li
+			(progn (warn "ERROR : Je suis pas sensé avoir un :unknown!") NIL); si je reçois un :unknown, probleme dans Lisp2li
 			)
 		((eql :const (car expr))
 			(append (list (cons :CONST (cdr expr))) (apply #'compil (car ll) (cdr ll)))
@@ -76,31 +87,34 @@
 			(append (apply #'compil (list (cadr expr))) (list (cons :SKIPNIL (+ 1 (nbInstr (caddr expr))))) (apply #'compil (list (caddr expr))) (list (cons :SKIP (nbInstr (cdddr expr)))) (apply #'compil (cdddr expr)) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :set-var (car expr))
-			(append (apply #'compil (cddr expr)) (list (cons :SET-VAR (cadr expr))) (apply #'compil (car ll) (cdr ll)))
+			(append (apply #'compil (list (cddr expr))) (list (cons :SET-VAR (cadr expr))) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :let (car expr))
-			(append (create-env (cadr expr)) (list (cons :STACK (cadr expr))) (compil (cddr expr)) '((:RTN)) (apply #'compil (car ll) (cdr ll)))
+			(append (create-env (cadr expr)) (list (cons :STACK (cadr expr))) (apply #'compil (cddr expr)) '((:RTN)) (apply #'compil (car ll) (cdr ll)))
+			)
+		((eql :lambda (car expr))
+			(append (import-env (cadr expr) 1) (list (cons :STACK (cadr expr))) (compil (cddr expr)) '((:RTN)) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :lclosure (car expr))
 			(append (import-env (cadr expr) 1) (list (cons :STACK (cadr expr))) (compil (cddr expr)) '((:RTN)) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :set-fun (car expr))
-			(append (list (cons :LABEL (cadr expr))) (apply #'compil (cddr expr)))
+			(append (list (cons :LABEL (cadr expr))) (list (cons :CONST (nbVar (apply #'compil (cdddr expr))))) (list (cons :CONST (caddr expr))) (apply #'compil (cdddr expr)))
 			)
 		((eql :apply (car expr))
 			(append (list (cons :CONST (eval-li (cdr expr) '()))) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :cvar (car expr))
-			NIL ; Tu vas en maxi - chier
+			(append (list (cons :LOAD (+ (- 0 (cadr expr)) (addvar (cddr expr))))) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :set-cvar (car expr))
-			NIL ; La  aussi
+			(append (apply #'compil (cdddr expr)) (list (cons :STORE (+ (- 0 (cadr expr)) (addvar (caddr expr))))) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :lcall (car expr))
-			NIL ; TODO
+			(append (apply #'compil (cdddr expr)) (list (cons :LOAD (+ (- 0 (cadr expr)) (addvar (cddr expr))))) (apply #'compil (car ll) (cdr ll)))
 			)
 		((eql :progn (car expr))
-			(append (apply #'compil (cdr expr) ll))
+			(append (apply #'compil (list (cdr expr)) ll))
 			)
 		((listp (car expr))
 			(apply #'compil (car expr))
@@ -115,3 +129,9 @@
 		(T (progn (setq ENVIRON (make-array 10)) (setf (aref ENVIRON 0) 1) (append (charge-env env) (list (cons :STACK (nbVar env))) (compil expr) '((:RTN)))))
 	)
 )
+
+; EXEMPLE:
+;
+;(li2svm '(:progn (:if (:call < (:var . 1) (:const . 2)) (:call + (:call FIB (:call - (:var . 1) (:const . 1))) (:call FIB (:call - (:var . 1) (:const . 2)))))) ())
+;
+;
