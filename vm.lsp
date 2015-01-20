@@ -12,10 +12,17 @@
 	()
 	'(get vm 'stacksize))
 
+
 ;; retourne la liste des labels enregistrés
 (defmacro label
 	()
 	'(get vm 'label))
+
+;; retourne le nombre max de labels enregistrés
+(defmacro maxlabel
+	()
+	'(get vm 'maxlabel))
+
 
 ;; retourne le début de la zone pile (avant BP => zone mémoire)
 (defmacro BP
@@ -79,6 +86,41 @@
 	)
 )
 
+;; retourne une liste de n instructions
+(defun getInstr
+	(assemblercode n &key (instr '()))
+	(if (eq n 0)
+		instr
+		(getInstr (cdr assemblercode) (- n 1) :instr (append instr (list (car assemblercode))))
+	)
+)
+
+;; retourne l'identifiant d'une fonction à partir de son nom
+(defun getIdFunction
+	(vm functionName &key (i 0))
+	(if (or (>= i (maxlabel)) (< i 0))
+		NIL
+		(if (or (and (eq functionName NIL) (eq (aref (label) i) NIL))
+				(and (not (eq (aref (label) i) NIL)) (eq functionName (aref (aref (label) i) 0))))
+			i
+			(getIdFunction vm functionName :i (+ i 1))
+		)
+	)
+)
+
+;; sauvegarde une nouvelle fonction
+(defun addNewFunction
+	(vm fctName nbArg nbInstr code)
+	(let ((newIdFunction (getIdFunction vm NIL)))
+		(assert (not (eq newIdFunction NIL)) (idFunction) "WARNING : IMPOSSIBLE TO DEFINED A NEW FUNCTION !")
+		(aset (make-array 3) (label) newIdFunction)   ; 0 nom, 1 nbArg, 2 code
+		(aset fctName (aref (label) newIdFunction) 0) ; 0 nom
+		(aset nbArg   (aref (label) newIdFunction) 1) ; 1 nbArg
+		(aset code	  (aref (label) newIdFunction) 2) ; 2 code
+	)
+)
+
+
 ;; parcours l'ensemble des instructions assembleurs
 (defun run
 	(assemblercode vm)
@@ -106,10 +148,18 @@
 
 				; appelle la fonction qui dépile ses paramètres et empile son résultat
 				(:CALL	(print ":CALL") ; stack(op1 op2 call) === op1 call op2
-					(let ((op2 (pop2 vm)) (op1 (pop2 vm)) (fct (cdar assemblercode)))
-						(if (and (symbolp fct) (eq (aref (label) fct) NIL)) ; -> ne marche pas ???
-							(print fct);(push2 vm (apply fct op1 op2 '())) ; opérateur binaire uniquement d'après la convention
-							(print "FONCTION DEFINIE DANS UN LABEL") ; fonction dans un label (A FAIRE)
+					(let ((fct (cdar assemblercode)))
+						(if (or (eq fct '+) (eq fct '-) (eq fct '/) (eq fct '*) (eq fct '<) (eq fct '>) (eq fct '=) (eq fct '/=) (eq fct '<=) (eq fct '>=))
+							(let ((op2 (pop2 vm)) (op1 (pop2 vm)))
+								(push2 vm (apply fct op1 op2 '())) ; opérateur binaire uniquement d'après la convention
+							)
+							(let ((idFct (getIdFunction vm fct)))
+								(if (eq idFct NIL)
+									(print "  -> WARNING : UNKNOW FUNCTION !")
+									; ajouter d'un 
+									(run (aref (aref (label) idFct) 2) vm)
+								)
+							)
 						)
 					)
 				)
@@ -144,9 +194,9 @@
 
 				; déclaration d'étiquette
 				(:LABEL	(print ":LABEL")
-					(let ((fctName (cdar assemblercode)))
-					(print fctName)
-					(aset (SP) (label) fctName)))
+					(let ((fctName (cdar assemblercode)) (nbInstr (cdadr assemblercode)) (nbArg (cdaddr assemblercode)))
+						(addNewFunction vm fctName nbArg nbInstr (getInstr (cdddr assemblercode) nbInstr))
+						(setf assemblercode (skip assemblercode (+ nbInstr 2)))))
 
 				; instruction non connue
 				(T			(print ":undefined"))
@@ -155,21 +205,22 @@
 		)
 	)
 )
- 
+
 
 ;; @param assemblercode : ((<keyword> . <etiquette>) ...)
 ;; @param memsize : (optionnel) taille de la pile 
 ;; @param vm : (optionnel) nom de la vm qui doit être unique
 (defun vm-make 
   	(assemblercode &key (memsize 100) (vm 'vm))	; vm === nom de la vm
-	(print 'START)
   	(assert (>= memsize 10) (memsize) "La taille minimum requise est 10.")
   	(assert (symbolp vm) (vm) "~s n'est pas un symbole." name)
   	(assert (eq (member vm listvm) NIL) (vm) "La vm ~s existe déjà." vm)
   	(print "Debut création vm")
 	(setf (stacksize) (- memsize 1))
-  	(setf (stack) (make-array memsize))	; on créé la pile sous forme d'un tableau de taille memsize
-	(setf (label) (make-array 20))	; 20 labels
+  	(setf (stack) (make-array memsize))		; on créé la pile sous forme d'un tableau de taille memsize
+	(setf (maxlabel) 20)					; maximum 20 labels
+  	(setf (label) (make-array (maxlabel)))	; on créé la liste des noms des fonctions enregistrées
+  	(setf (label) (make-array (maxlabel)))	; on créé la liste des noms des fonctions enregistrées
 	(setf (BP) 10)   ; base  pointer : début zone pile (ne change jamais)
 	(setf (FP) (BP)) ; frame pointer : début du pile du bloc de pile courant
 	(setf (SP) (BP)) ; stack pointer : pointeur sur le bloc de pile courant
@@ -177,5 +228,4 @@
 	(print "Début de l'exécution...")
 	(run assemblercode vm)
 	(pop2 vm)	; sortie du code (assemblercode) donné en paramètre
-	;'END
 )
