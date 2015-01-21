@@ -123,41 +123,59 @@
 
 ;; parcours l'ensemble des instructions assembleurs
 (defun run
-	(assemblercode vm)
+	(assemblercode vm &key (fctName NIL) (i 0))
+	(format t "→")
+	(loop for x from 0 to i do
+		(format t "   ")
+	)
 	(if (eq assemblercode NIL)
-		(print "Fin de l'exécution")
+		(if (eq fctName NIL)
+			(format t "Le programme retourne ~a~%" (aref (stack) (SP)))
+			(format t "La fonction ~a retourne ~a~%" fctName (aref (stack) (SP))))
 		(progn
 			;(print 'READ-INST)
 			(case (caar assemblercode)
 				; empile le littéral
-				(:CONST (print ":CONST")
+				(:CONST (format t ":CONST~%")
 					(push2 vm (cdar assemblercode)))
 
 				; empile la n-ième variable du bloc de pile courant
-				(:VAR	(print ":VAR")
+				(:VAR	(format t ":VAR~%")
 					(push2 vm (aref (stack) (+ (FP) (- (cdar assemblercode) 1)))))
 
 				; affecte la valeur dépillée à la n-ième variable du bloc de pile courant
-				(:SET-VAR	(print ":SET-VAR")
+				(:SET-VAR	(format t ":SET-VAR~%")
 					(aset (pop2 vm) (stack) (+ (FP) (- (cdar assemblercode) 1))))
 
 				; réserve un bloc de pile de taille n
-				(:STACK	(print ":STACK")
+				(:STACK	(format t ":STACK~%")
 					(push2 vm (FP)) ; sauvegarde l'ancien FP (et met implicitement le SP au bon endroit)
 					(setf (FP) (- (SP) (cdar assemblercode) 1))) ; place le nouveau FP
 
 				; appelle la fonction qui dépile ses paramètres et empile son résultat
-				(:CALL	(print ":CALL") ; stack(op1 op2 call) === op1 call op2
+				(:CALL	(format t ":CALL") ; stack(op1 op2 call) === op1 call op2
 					(let ((fct (cdar assemblercode)))
 						(if (or (eq fct '+) (eq fct '-) (eq fct '/) (eq fct '*) (eq fct '<) (eq fct '>) (eq fct '=) (eq fct '/=) (eq fct '<=) (eq fct '>=))
 							(let ((op2 (pop2 vm)) (op1 (pop2 vm)))
+								(format t " (~a ~a ~a)~%" fct op1 op2)
 								(push2 vm (apply fct op1 op2 '())) ; opérateur binaire uniquement d'après la convention
 							)
 							(let ((idFct (getIdFunction vm fct)))
 								(if (eq idFct NIL)
-									(print "  -> WARNING : UNKNOW FUNCTION !")
-									; ajouter d'un 
-									(run (aref (aref (label) idFct) 2) vm)
+									(format t " → WARNING : UNKNOW FUNCTION !~%")
+									; ajouter un stack avant l'appel de la fonction (sauf si elle ne prend pas d'arguement) (c'est li2svm qui se charge de le faire)
+									(progn
+										(format t " (~a " fct)
+										(if (> (aref (aref (label) idFct) 1) 0)
+											(loop for x from 0 to (- (aref (aref (label) idFct) 1) 1) do
+												(if (> x 0)
+													(format t " "))
+												(format t "~a" (aref (stack) (+ (FP) x)))
+											)
+										)
+										(format t ")~%")						
+										(run (aref (aref (label) idFct) 2) vm :fctName fct :i (+ i 1)) ; on suppose aussi que li2svm fait un return à la fin
+									)
 								)
 							)
 						)
@@ -165,43 +183,43 @@
 				)
 
 				; retourn d'un appel précédent
-				(:RTN	(print ":RTN")
+				(:RTN	(format t ":RTN~%")
 					(let ((valueToReturn (pop2 vm)) (previousFP (pop2 vm)))
 						(push2 vm valueToReturn)
 						(setf (FP) previousFP)))
 
 				; saute n instructions
-				(:SKIP	(print ":SKIP")
+				(:SKIP	(format t ":SKIP~%")
 					(setf assemblercode (skip assemblercode (cdar assemblercode))))
 
 				; saute n instructions si la valeur dépilée est NIL
-				(:SKIPNIL	(print ":SKIPNIL")
+				(:SKIPNIL	(format t ":SKIPNIL~%")
 					(if (eq (pop2 vm) NIL)
 						(setf assemblercode (skip assemblercode (cdar assemblercode)))))
 
 				; saute n instructions si la valeur dépilée n'est pas NIL
-				(:SKIPTRUE	(print ":SKIPTRUE")
+				(:SKIPTRUE	(format t ":SKIPTRUE~%")
 					(if (not (eq (pop2 vm) NIL))
 						(setf assemblercode (skip assemblercode (cdar assemblercode)))))
 
 				; empile le contenu du mot mémoire d'adresse n
-				(:LOAD	(print ":LOAD")
+				(:LOAD	(format t ":LOAD~%")
 					(push2 vm (aref (stack) (cdar assemblercode))))
 
 				; affecte au mot mémoire d'adresse n la valeur dépilée (ATTENTION)
-				(:STORE	(print ":STORE")
+				(:STORE	(format t ":STORE~%")
 					(aset (pop2 vm) (stack) (cdar assemblercode)))
 
 				; déclaration d'étiquette
-				(:LABEL	(print ":LABEL")
+				(:LABEL	(format t ":LABEL~%")
 					(let ((fctName (cdar assemblercode)) (nbInstr (cdadr assemblercode)) (nbArg (cdaddr assemblercode)))
 						(addNewFunction vm fctName nbArg nbInstr (getInstr (cdddr assemblercode) nbInstr))
 						(setf assemblercode (skip assemblercode (+ nbInstr 2)))))
 
 				; instruction non connue
-				(T			(print ":undefined"))
+				(T		(format t ":undefined~%"))
 			)
-			(run (cdr assemblercode) vm)
+			(run (cdr assemblercode) vm :fctName fctName :i i)
 		)
 	)
 )
@@ -215,7 +233,7 @@
   	(assert (>= memsize 10) (memsize) "La taille minimum requise est 10.")
   	(assert (symbolp vm) (vm) "~s n'est pas un symbole." name)
   	(assert (eq (member vm listvm) NIL) (vm) "La vm ~s existe déjà." vm)
-  	(print "Debut création vm")
+  	(format t "→ Initialisation de la vm~%")
 	(setf (stacksize) (- memsize 1))
   	(setf (stack) (make-array memsize))		; on créé la pile sous forme d'un tableau de taille memsize
 	(setf (maxlabel) 20)					; maximum 20 labels
@@ -224,8 +242,13 @@
 	(setf (BP) 10)   ; base  pointer : début zone pile (ne change jamais)
 	(setf (FP) (BP)) ; frame pointer : début du pile du bloc de pile courant
 	(setf (SP) (BP)) ; stack pointer : pointeur sur le bloc de pile courant
-	(print "Initialisation terminée")
-	(print "Début de l'exécution...")
+	(format t "→ Initialisation terminée~%")
+	(format t "→ Début de l'exécution du programme~%")
 	(run assemblercode vm)
 	(pop2 vm)	; sortie du code (assemblercode) donné en paramètre
 )
+
+
+; (vm-make (li2svm (lisp2li '(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) ()) '()))
+
+; (vm-make '((:CONST . T) (:LABEL . :add) (:CONST . 4) (:CONST . 2) (:VAR . 1) (:VAR . 2) (:CALL . +) (:RTN) (:CONST . 11) (:CONST . 24) (:STACK . 2) (:CALL . :add) (:CONST . 65) (:STACK . 2) (:CALL . :add)))
