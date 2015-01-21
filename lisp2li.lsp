@@ -24,7 +24,7 @@
 	;Cas du UNKNOWN
 	((and (not (fboundp (car expr)))
 	      (not (get (car expr) :defun)))
-	 (list* :unknown expr env))
+	 (list :unknown expr env))
 
 	 ;Cas du IF
 	 ((equal 'if (car expr))
