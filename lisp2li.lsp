@@ -22,8 +22,9 @@
 		(list* :mcall (car expr) (map-lisp2li (cdr expr) env)))
 
 	;Cas du UNKNOWN
-	;((not (fboundp (car expr)))
-        ; (list* (:unknown expr env)))
+	((and (not (fboundp (car expr)))
+	      (not (get (car expr) :defun)))
+	 (list* :unknown expr env))
 
 	 ;Cas du IF
 	 ((equal 'if (car expr))
@@ -35,8 +36,8 @@
 
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-	 (list :set-defun (cons :const (cadr expr))
-	       (append (list :lambda (length (caddr expr))) (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env)))))
+	  (setf (get (cadr expr) :defun) (list :set-defun (cons :const (cadr expr))
+	       (append (list :lambda (length (caddr expr))) (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env))))))
 	
 	 ;Cas du SETF
 	 ((equal 'setf (car expr))
