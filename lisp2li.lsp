@@ -36,7 +36,7 @@
 
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-	  (setf (get (cadr expr) :defun) (list :set-defun (cons :const (cadr expr))
+	  (progn (setf (get (cadr expr) :defun) T) (list :set-defun (cons :const (cadr expr))
 	       (append (list :lambda (length (caddr expr))) (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env))))))
 	
 	 ;Cas du SETF
@@ -84,8 +84,7 @@
 (defun make-stat-env (args env)
  (if (null args)
      env
-   (progn (print env)
-	  (append env args))))
+   (append env args)))
 
 	  
 ;Petit test de fibo	
