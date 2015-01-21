@@ -20,30 +20,31 @@
 	;Cas du MCALL
 	((not (null (get-defun (car expr))))
 		(list* :mcall (car expr) (map-lisp2li (cdr expr) env)))
-	
+
+	;Cas du UNKNOWN
+	;((not (fboundp (car expr)))
+        ; (list* (:unknown expr env)))
+
 	 ;Cas du IF
 	 ((equal 'if (car expr))
 	  (list* :if (map-lisp2li (cdr expr) env)))
-	  
-	;Cas du LET	 
-	
+	 
+	;Cas du LET
+	 ((equal 'let (car expr))
+	  (list* :let (length (cdr expr)) (map-lisp2li (cadr expr) env)))
+
 	;Cas du DEFUN
 	((equal 'defun (car expr))
-	 (setf (get (cadr expr) :defun) 
-	       (list :lambda (length (caddr expr)) 
-		     (list* :progn (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env)))
-		     )))
+	 (list :set-defun (cons :const (cadr expr))
+	       (append (list :lambda (length (caddr expr))) (map-lisp2li (cdddr expr) (make-stat-env (caddr expr) env)))))
 	
 	 ;Cas du SETF
 	 ((equal 'setf (car expr))
-	  ;Si le 1er est un symbole
 	  (if (symbolp (cadr expr)) 
-	  (let ((p (position (cadr expr) env)))
-		(if (equal p NIL)
-		;Si p = nil alors erreur
-		(warn "variable inconnue")
-		  ;Sinon
-		  (list :set-var (+ p 1) (lisp2li (caddr expr) env))))))
+	      ;Si le 1er est un symbole
+	      (list :set-var (cadr expr) (lisp2li (caddr expr) env))
+	    ;Sinon
+	    (list :set-fun (lisp2li (cadr expr) env))))
 
 	 ;MACRO
 	 ((macro-function (car expr)) (lisp2li (macroexpand-1 expr) env))
@@ -62,7 +63,7 @@
 	   
 	 ;Cas par defaut (CALL)
 	 (T (list* :call (car expr) (map-lisp2li (cdr expr) env)))
-)
+	 )
 ))
 
 (defun map-lisp2li (expr env)
@@ -87,4 +88,8 @@
 
 	  
 ;Petit test de fibo	
-;(lisp2li '(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))())
+;(lisp2li '(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) '())
+
+;test let
+;(lisp2li '(let ((x 1) (y (+ x 1))) y) '())
+
