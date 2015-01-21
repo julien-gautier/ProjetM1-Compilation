@@ -90,6 +90,6 @@
 ;Petit test de fibo	
 ;(lisp2li '(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) '())
 
-;test let
-;(lisp2li '(let ((x 1) (y (+ x 1))) y) '())
+;(lisp2li '(progn (defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) (fib 5)) '())
+
 
